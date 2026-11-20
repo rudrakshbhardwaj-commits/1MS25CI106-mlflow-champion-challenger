@@ -73,22 +73,25 @@ LOWER_IS_BETTER = ["avg_latency_ms", "total_inference_s"]
 
 
 # ------------------------------------------------------------------- data
+
 def prepare_eval_set() -> pd.DataFrame:
     """Create (or reuse) the shared evaluation set and save it to data/eval_inputs.csv."""
     path = DATA_DIR / "eval_inputs.csv"
+
     if path.exists():
         df = pd.read_csv(path)
         if len(df) == N_SAMPLES:
             print(f"Reusing existing {path} ({len(df)} rows)")
             return df
-    ds = load_dataset("glue", "sst2", split="validation")
+
+    ds = load_dataset("nyu-mll/glue", "sst2", split="validation")
     rng = np.random.RandomState(SEED)
     idx = rng.choice(len(ds), size=N_SAMPLES, replace=False)
     df = pd.DataFrame(
         {
             "sample_id": idx,
             "text": [ds[int(i)]["sentence"].strip() for i in idx],
-            "reference": [int(ds[int(i)]["label"]) for i in idx],  # 1=pos, 0=neg
+            "reference": [int(ds[int(i)]["label"]) for i in idx],
         }
     )
     df.to_csv(path, index=False)

@@ -1,0 +1,12 @@
+{
+  "model": "siebert/sentiment-roberta-large-english",
+  "metrics": {
+    "accuracy": 0.945,
+    "precision": 0.9375,
+    "recall": 0.963302752293578,
+    "f1": 0.9502262443438914,
+    "macro_f1": 0.9443868651887055,
+    "avg_latency_ms": 193.3587665008963,
+    "total_inference_s": 38.67175330017926
+  }
+}

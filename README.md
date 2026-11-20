@@ -1,79 +1,135 @@
 # Champion–Challenger Sentiment Classification with Hugging Face + MLflow
 
-**Student USN:** `<YOUR_USN>`  |  **Course:** Skill Lab (MLOps with MLflow), RIT
+**Student USN:** `1MS25CI106` | **Course:** Skill Lab (MLOps with MLflow), RIT
 
-## 1. Task and models
+## 1. Task and Models
 
-- **Task:** binary sentiment classification (positive / negative)
-- **Dataset:** GLUE SST-2, validation split, **200 samples** drawn with `seed=42` (saved in `data/eval_inputs.csv`)
-- **Model A (current Champion):** `distilbert-base-uncased-finetuned-sst-2-english` (~67M)
-- **Model B (Challenger):** `siebert/sentiment-roberta-large-english` (~355M)
-- Both models run on the same inputs, in the same order. Raw labels (`POSITIVE`/`NEGATIVE`) are mapped to 1/0.
+- **Task:** Binary sentiment classification (positive / negative).
+- **Dataset:** GLUE SST-2 validation split, 200 samples selected using `seed=42` and saved in `data/eval_inputs.csv`.
+- **Model A (Previous Champion):** `distilbert-base-uncased-finetuned-sst-2-english` (~67M parameters).
+- **Model B (New Champion):** `siebert/sentiment-roberta-large-english` (~355M parameters).
+- Both models were evaluated on the same inputs in the same order.
+- Raw model labels (`POSITIVE` / `NEGATIVE`) were mapped to 1 / 0.
 
-## 2. How to run
+## 2. How to Run
+
+### Step 1: Create and activate the environment
 
 ```bash
-# 1. environment
 python -m venv .venv
-.venv\Scripts\activate            # Windows  (macOS/Linux: source .venv/bin/activate)
+.venv\Scripts\activate
 pip install -r requirements.txt
-
-# 2. terminal 1 - start MLflow server (keep running)
-python -m mlflow server --host 127.0.0.1 --port 5000 --backend-store-uri sqlite:///mlflow.db
-
-# 3. terminal 2 - run everything (set your USN first)
-$env:USN="<YOUR_USN>"             # PowerShell  (bash: export USN=...)
-python evaluate.py                # runs both models, logs to MLflow, makes the decision
-python register_champion.py       # registers models, sets @champion / @challenger
-python predict_from_mlflow.py     # loads @champion, predicts on data/new_data.csv
-python predict_from_mlflow.py --both
-
-# stretch goal: flip aliases and re-run WITHOUT editing the script
-python register_champion.py --flip
-python predict_from_mlflow.py
 ```
 
-MLflow UI: http://127.0.0.1:5000
+### Step 2: Start the MLflow server
 
-## 3. Champion rule (written BEFORE the final run, never changed afterwards)
+Run this command in the first terminal and keep it running:
+
+```bash
+python -m mlflow server --host 127.0.0.1 --port 5000 --backend-store-uri sqlite:///mlflow.db
+```
+
+### Step 3: Run the evaluation
+
+Open another terminal:
+
+```powershell
+$env:USN="1MS25CI106"
+python evaluate.py
+```
+
+### Step 4: Register the winning model
+
+```powershell
+python register_champion.py
+```
+
+### Step 5: Generate predictions
+
+```powershell
+python predict_from_mlflow.py
+python predict_from_mlflow.py --both
+```
+
+### MLflow Dashboard
+
+http://127.0.0.1:5000
+
+## 3. Champion Selection Rule
+
+The following rules were defined before the final evaluation:
 
 | Part | Rule |
-| --- | --- |
-| Primary metric | **macro-F1** on the 200-sample evaluation set (**higher is better**) |
-| Minimum margin | Challenger must beat Champion by **>= 0.01 (1 percentage point)**. With only 200 samples, 1 pp is just 2 examples, so anything smaller is treated as noise. |
-| Tie-breaker | If \|delta\| < margin, the **faster** model (lower `avg_latency_ms`) wins. |
-| Guardrail | Challenger is rejected if its latency is **> 10x** the Champion's. |
-| Direction | accuracy / precision / recall / F1 / macro-F1: higher is better. `avg_latency_ms`, `total_inference_s`: lower is better. |
+|---|---|
+| Primary metric | Macro-F1 on the 200-sample evaluation set |
+| Minimum improvement | Challenger must improve macro-F1 by at least 0.01 |
+| Tie-breaker | If the difference is below 0.01, the faster model wins |
+| Latency guardrail | Challenger is rejected if it is more than 10 times slower |
+| Metric direction | Higher accuracy, precision, recall, F1 and macro-F1 are better; lower latency is better |
 
-## 4. Results
+## 4. Evaluation Results
 
-> Fill this in from `outputs/metrics_summary.json` after running.
+Final results from the 200-sample evaluation:
 
-| Metric | A: distilbert-sst2 | B: roberta-large | Difference (B − A) |
-| --- | --- | --- | --- |
-| Accuracy | | | |
-| Precision | | | |
-| Recall | | | |
-| F1 | | | |
-| **Macro-F1 (primary)** | | | |
-| Avg latency (ms) | | | |
-| Total inference (s) | | | |
+| Metric | A: DistilBERT | B: RoBERTa Large | Difference (B − A) |
+|---|---:|---:|---:|
+| Accuracy | 0.9350 | 0.9450 | +0.0100 |
+| Precision | 0.9286 | 0.9375 | +0.0089 |
+| Recall | 0.9541 | 0.9633 | +0.0092 |
+| F1 | 0.9412 | 0.9502 | +0.0090 |
+| **Macro-F1** | **0.9343** | **0.9444** | **+0.0101** |
+| Average latency (ms) | 26.49 | 193.36 | +166.87 |
+| Total inference (s) | 5.30 | 38.67 | +33.37 |
 
-Plots are in `outputs/` (confusion matrices, metric comparison, latency comparison).
-Disagreement examples with my comments are in `outputs/disagreements.csv`.
+The evaluation results are saved in `outputs/metrics_summary.json`.
 
-## 5. Decision (150–250 words)
+Plots and comparison artifacts are saved in `outputs/`. Model comparison, confusion matrices and latency visualizations are logged in MLflow.
 
-> Write this yourself after seeing the results. Answer: Does the Challenger improve on the
-> Champion? By how much? Is the difference meaningful for 200 samples? What are the
-> trade-offs (speed, size, errors)? Remember: a Challenger that does not win is a fine result.
+## 5. Final Champion–Challenger Decision
 
-## 6. Limitations and declaration
+The Challenger model, RoBERTa Large, outperformed the previous Champion, DistilBERT, on the 200-sample SST-2 evaluation set. Its macro-F1 score was 0.9444 compared with DistilBERT's 0.9343, giving an improvement of 0.0101 (approximately 1.01 percentage points). This exceeded the predefined minimum improvement margin of 0.01, so the Challenger was selected as the new Champion.
 
-- Only 200 evaluation samples; a ~1 pp difference is about 2 examples and may be noise.
-- SST-2 is short movie-review text; results may not generalise to other domains.
-- The DistilBERT SST-2 model was fine-tuned on SST-2 *train*; SiEBERT was trained on a mix of
-  datasets that may include SST-2 data, so scores could be optimistic.
-- Latency measured on my machine (CPU/GPU noted in MLflow param `device`), batch size 1.
-- **Tools used:** Hugging Face Transformers, MLflow, scikit-learn, matplotlib.
-  An AI assistant (Claude) helped me scaffold the code and the README; I have read and can explain every line.
+RoBERTa also achieved higher accuracy (0.945 versus 0.935), precision, recall and F1 score. However, this improvement comes with a speed trade-off. Its average inference latency was 193.36 ms, compared with 26.49 ms for DistilBERT, making it approximately 7.3 times slower. This remains within the predefined 10x latency guardrail.
+
+The improvement is relatively small, and because the evaluation contains only 200 samples, it should not be considered conclusive evidence of general superiority. Overall, RoBERTa was selected because it crossed the required macro-F1 improvement threshold without violating the latency limit. DistilBERT remains a useful alternative when faster inference is more important than the small improvement in classification performance.
+
+## 6. Disagreement Analysis
+
+The following five examples were identified where the two models predicted different sentiments:
+
+1. **Pleasant romance:** DistilBERT correctly predicted positive sentiment. RoBERTa predicted negative, possibly due to the phrase "maddeningly predictable."
+
+2. **Fun and entertaining movie:** DistilBERT correctly predicted positive sentiment. RoBERTa may have struggled with the informal wording and short descriptive phrases.
+
+3. **Bit disappointing:** DistilBERT correctly predicted negative sentiment. RoBERTa may have focused on the positive word "decent" and overlooked the negative context.
+
+4. **Oh come on:** RoBERTa correctly predicted negative sentiment. DistilBERT predicted positive, possibly because the short phrase lacks detailed context.
+
+5. **Cannes movie review:** DistilBERT correctly predicted negative sentiment. RoBERTa may have focused on the positive expression "always dreamed" instead of the overall negative meaning.
+
+These examples show that a higher overall evaluation score does not mean a model will classify every individual sentence correctly.
+
+The original disagreement records are available in `outputs/disagreements.csv`.
+
+## 7. Model Registry
+
+The registered MLflow model is named `sentiment-model`.
+
+| Alias | Version | Model |
+|---|---:|---|
+| Champion | 2 | `siebert/sentiment-roberta-large-english` |
+| Challenger | 1 | `distilbert-base-uncased-finetuned-sst-2-english` |
+
+The prediction script loads models using their MLflow aliases, allowing the active Champion and Challenger to be tested without manually specifying model versions.
+
+## 8. Limitations and Declaration
+
+- Only 200 evaluation samples were used, so small performance differences may be due to sampling variation.
+- SST-2 contains short movie-review sentences, and results may not generalize to other domains.
+- The DistilBERT model was fine-tuned on SST-2 training data. SiEBERT was trained using multiple datasets, which may include overlapping sentiment data.
+- Latency was measured on the local machine and may vary depending on hardware and system load.
+- Inference was performed with batch size 1.
+
+**Tools used:** Hugging Face Transformers, MLflow, scikit-learn, pandas and matplotlib.
+
+An AI assistant (ChatGPT) helped scaffold the project and README. The implementation and results were reviewed as part of the project work.

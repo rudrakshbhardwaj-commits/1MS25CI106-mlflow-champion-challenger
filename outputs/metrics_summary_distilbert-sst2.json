@@ -1,0 +1,12 @@
+{
+  "model": "distilbert-base-uncased-finetuned-sst-2-english",
+  "metrics": {
+    "accuracy": 0.935,
+    "precision": 0.9285714285714286,
+    "recall": 0.9541284403669725,
+    "f1": 0.9411764705882353,
+    "macro_f1": 0.9342753861321065,
+    "avg_latency_ms": 26.488344000536017,
+    "total_inference_s": 5.297668800107203
+  }
+}
