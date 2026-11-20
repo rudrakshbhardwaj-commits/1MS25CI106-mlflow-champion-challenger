@@ -1,0 +1,20 @@
+# MLflow local stores (do NOT upload, per assignment)
+mlruns/
+mlartifacts/
+mlflow.db
+*.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+
+# Model files / caches
+*.pt
+*.bin
+*.safetensors
+.cache/
+.ipynb_checkpoints/
+.DS_Store
